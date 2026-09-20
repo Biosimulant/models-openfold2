@@ -1,0 +1,86 @@
+schema_version: "2.0"
+package: nvidia-openfold2-hosted
+version: "0.1.0"
+title: NVIDIA-hosted OpenFold2
+description: One individually authored OpenFold2 Lab with explicit MSA/template provenance and ranked structure outputs. Provider inference is currently failing; qualification pending.
+models:
+  - alias: main
+    path: owned/models/main
+runtime:
+  python_version: "3.10"
+  duration: 1.0
+  communication_step: 1.0
+  initial_inputs: {}
+wiring: []
+io:
+  inputs:
+    - name: protein_sequence
+      label: Protein query
+      maps_to: main.protein_sequence
+      value_type: str
+      format: sequence
+      required: true
+      description: Exact standard protein sequence with 1–1000 residues.
+    - name: protein_msa
+      label: Protein alignments
+      maps_to: main.protein_msa
+      value_type: record
+      format: json
+      required: false
+      default: {query: {}, alignments: []}
+      description: Identified A3M collection; empty means no MSA evidence, without fabricated hits.
+    - name: templates
+      label: Explicit templates
+      maps_to: main.templates
+      value_type: record
+      format: json
+      required: false
+      default: {items: []}
+      description: Complete mmCIF text, digest and source provenance; enable use_templates explicitly.
+    - name: run_options
+      label: Prediction options
+      maps_to: main.run_options
+      value_type: record
+      format: json
+      required: false
+      default: {parameters: {}}
+      description: Parameter-set selection and template toggle. Relaxation unsupported.
+    - name: query_metadata
+      label: Query provenance
+      maps_to: main.query_metadata
+      value_type: record
+      format: json
+      required: false
+      default: {query_id: "", provenance: {}}
+      description: Input identifier and caller-provided provenance.
+  outputs:
+    - name: predicted_structure
+      label: Ranked structures
+      maps_to: main.predicted_structure
+      description: Every requested parameter-set structure with atom mapping and original text.
+    - name: confidence_scores
+      label: Native confidence fields
+      maps_to: main.confidence_scores
+      description: Explicit field availability, scales and residue identities. No measured-accuracy claim.
+    - name: inference_metrics
+      label: Native metrics
+      maps_to: main.inference_metrics
+      description: Original performance metrics and unit limitations.
+    - name: run_provenance
+      label: Prediction provenance
+      maps_to: main.run_provenance
+      description: Request, source and output hashes, provider identity and unresolved deployment versions.
+    - name: native_response
+      label: Original response
+      maps_to: main.native_response
+      description: Original JSON for independent inspection.
+intended_use:
+  statement: Research monomer structure prediction via NVIDIA OpenFold2 with explicit optional MSA and template evidence.
+caveats:
+  - Actual provider calls returned CUDA illegal-memory-access errors; no successful runtime validation yet.
+  - Hosted published schema 2.1.0 and NVIDIA target 2.6.0 differ; deployment identity is unknown.
+  - Template alignment is internal and compressed-template transport remains unverified.
+  - Exact weights, managed runtime/credentials, scientific thresholds and independent benchmarks are unresolved.
+prohibited_claims:
+  - Successful inference, exact-release equivalence or domain qualification from local synthetic contract tests alone.
+  - Measured accuracy, biological function, binding or clinical utility from predicted confidence or template-conditioned reconstruction.

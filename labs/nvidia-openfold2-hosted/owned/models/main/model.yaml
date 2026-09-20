@@ -1,0 +1,95 @@
+schema_version: "2.0"
+package: nvidia-openfold2-hosted-core
+version: "0.1.0"
+title: NVIDIA-hosted OpenFold2
+description: Individually authored protein structure prediction interface. Actual hosted inference and scientific qualification remain blocked.
+standard: other
+biosim:
+  entrypoint: model:NvidiaOpenFold2
+  communication_step: 1.0
+  execution_policy: once_before_run
+runtime:
+  python_version: "3.10"
+  dependencies:
+    packages:
+      - biosimulant==0.0.34
+      - httpx==0.28.1
+      - biopython==1.84
+      - numpy==1.26.4
+      - pyyaml==6.0.2
+      - pytest==8.3.5
+parameters:
+  - name: observation_timeout_s
+    value: 600.0
+    description: Maximum client observation seconds; not remote cancellation.
+  - name: max_response_bytes
+    value: 20000000
+    description: Maximum decoded native JSON bytes, no silent truncation.
+  - name: resume_request_id
+    value: null
+    description: Existing provider UUID to observe without another POST.
+  - name: resume_request_sha256
+    value: null
+    description: Exact original canonical input digest required for resume.
+io:
+  inputs:
+    - name: protein_sequence
+      signal_type: scalar
+      dtype: str
+      accepted_units: ["1"]
+      required: true
+      description: Exact 1–1000-residue standard uppercase protein sequence.
+    - name: protein_msa
+      signal_type: record
+      schema: {query: json, alignments: json}
+      accepted_units: ["1"]
+      required: false
+      default: {query: {}, alignments: []}
+      description: Identified per-database A3M collection; empty explicitly means sequence-only prediction.
+    - name: templates
+      signal_type: record
+      schema: {items: json}
+      accepted_units: ["1"]
+      required: false
+      default: {items: []}
+      description: Complete checksummed mmCIF templates with label chain A and explicit provenance; no HHR.
+    - name: run_options
+      signal_type: record
+      schema: {parameters: json}
+      accepted_units: ["1"]
+      required: false
+      default: {parameters: {}}
+      description: selected_models defaults 1–5; use_templates false; relax_prediction must remain false.
+    - name: query_metadata
+      signal_type: record
+      schema: {query_id: str, provenance: json}
+      accepted_units: ["1"]
+      required: false
+      default: {query_id: "", provenance: {}}
+      description: Native input_id and caller provenance; absent ID becomes sequence digest.
+  outputs:
+    - name: predicted_structure
+      signal_type: record
+      schema: {query: json, structures: json}
+      emitted_unit: "1"
+      description: All ranked structures, unchanged text and atom/residue mapping. Coordinate fields angstrom.
+    - name: confidence_scores
+      signal_type: record
+      schema: {records: json, semantics: json}
+      emitted_unit: "1"
+      description: Native confidence and available pLDDT, PAE (angstrom), pTM and bin probabilities; mixed report, not measured accuracy.
+    - name: inference_metrics
+      signal_type: record
+      schema: {native: json, semantics: json}
+      emitted_unit: "1"
+      description: Original native performance metrics with field-specific unit caveats.
+    - name: run_provenance
+      signal_type: record
+      schema: {request: json, provider: json, inputs: json, backend_identity: json, limitations: json}
+      emitted_unit: "1"
+      description: Exact input and output hashes, safe provider identities, MSA/template provenance and missing deployment digests.
+    - name: native_response
+      signal_type: scalar
+      dtype: str
+      emitted_unit: "1"
+      description: Exact native response JSON for independent inspection.
